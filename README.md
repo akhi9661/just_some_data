@@ -24,7 +24,9 @@ The installation is much easier in a conda environment [miniconda or anaconda]
 
 #### 3. Install the necessary dependencies
 
-- Install package from conda-forge:  conda install PKGNAME -c conda-forge
+The list of dependencies is available in `requirements.txt`. 
+
+- Install package from conda-forge: 
       
       conda install -c conda-forge rasterio
       conda install -c conda-forge glob2
