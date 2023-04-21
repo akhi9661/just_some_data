@@ -1,3 +1,4 @@
 rasterio
 glob2
 pandas
+numpy
