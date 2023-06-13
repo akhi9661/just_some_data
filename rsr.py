@@ -2,6 +2,16 @@ import os, glob, rasterio, numpy as np, pandas as pd
 from IPython.display import clear_output
     
 def _calc_rayleigh_optical_depth(wavelength):
+
+    '''
+    This function calculates the Rayleigh optical depth for a given wavelength.
+
+    Parameters: 
+        wavelength (float): wavelength in micrometers.
+
+    Returns:
+        rayleigh_optical_depth (float): Rayleigh optical depth.     
+    '''
     
     rayleigh_optical_depth = 0.008569 * (1 / (wavelength ** 4)) * (1 + 0.0113 * (1 / (wavelength ** 2)) 
                                                                    + 0.00013 * (1 / (wavelength ** 4)))
@@ -15,7 +25,21 @@ def _calc_rayleigh_reflectance(wavelength,
                                sensor_zenith_angle,
                                rayleigh_optical_depth):
     
-    #print('\tCalculating Rayleigh reflectance ...')
+    '''
+    This function calculates the Rayleigh reflectance for a given wavelength.
+
+    Parameters:
+        wavelength (float): wavelength in micrometers.
+        solar_azimuth_angle (float): solar azimuth angle in radians.
+        solar_zenith_angle (float): solar zenith angle in radians.
+        sensor_azimuth_angle (float): sensor azimuth angle in radians.
+        sensor_zenith_angle (float): sensor zenith angle in radians.
+        rayleigh_optical_depth (float): Rayleigh optical depth. Inherited from _calc_rayleigh_optical_depth() function.
+
+    Returns:
+        rayleigh_reflectance (float): Rayleigh reflectance.    
+    '''
+    
     rayleigh_phase = _calc_rayleigh_phase(solar_azimuth_angle = solar_azimuth_angle,
                                           solar_zenith_angle = solar_zenith_angle,
                                           sensor_azimuth_angle = sensor_azimuth_angle,
@@ -33,7 +57,19 @@ def _calc_rayleigh_phase(solar_azimuth_angle,
                          sensor_azimuth_angle,
                          sensor_zenith_angle):
     
-    #print('\tCalculating Rayleigh Phase function ...')
+    '''
+    This function calculates the Rayleigh phase function for a given wavelength.
+
+    Parameters:
+        solar_azimuth_angle (float): solar azimuth angle in radians.
+        solar_zenith_angle (float): solar zenith angle in radians.
+        sensor_azimuth_angle (float): sensor azimuth angle in radians.
+        sensor_zenith_angle (float): sensor zenith angle in radians.
+
+    Returns:
+        rayleigh_phase (float): Rayleigh phase function.    
+    '''
+
     coef_a = 0.9587256
     coef_b = 1 - coef_a
     scattering_angle = _calc_scattering_angle(solar_azimuth_angle = solar_azimuth_angle,
@@ -51,7 +87,19 @@ def _calc_scattering_angle(solar_azimuth_angle,
                            sensor_azimuth_angle,
                            sensor_zenith_angle):
     
-    #print('\tCalculating Scattering Angle ...')
+    '''
+    This function calculates the scattering angle for a given wavelength.
+
+    Parameters:
+        solar_azimuth_angle (float): solar azimuth angle in radians.
+        solar_zenith_angle (float): solar zenith angle in radians.
+        sensor_azimuth_angle (float): sensor azimuth angle in radians.
+        sensor_zenith_angle (float): sensor zenith angle in radians.
+
+    Returns:
+        scattering_angle (float): scattering angle.     
+    '''
+
     relative_azimuth_angle = _calc_relative_azimuth_angle(angle_1 = solar_azimuth_angle,
                                                           angle_2 = sensor_azimuth_angle)
     
@@ -63,7 +111,17 @@ def _calc_scattering_angle(solar_azimuth_angle,
 def _calc_relative_azimuth_angle(angle_1,
                                  angle_2):
     
-    #print('\tCalculating Relative Azimuth Angle ...')
+    '''
+    This function calculates the relative azimuth angle for a given wavelength. 
+
+    Parameters:
+        angle_1 (float): angle 1 in radians.
+        angle_2 (float): angle 2 in radians.
+
+    Returns:
+        relative_azimuth_angle (float): relative azimuth angle.    
+    '''
+    
     delta_phi = angle_1 - angle_2
     delta_phi = np.where(delta_phi > 2 * np.pi, delta_phi - 2 * np.pi, delta_phi)
     delta_phi = np.where(delta_phi < 0, delta_phi + 2 * np.pi, delta_phi)
@@ -72,8 +130,17 @@ def _calc_relative_azimuth_angle(angle_1,
 
 
 def _calc_satm(rayleigh_optical_depth):
+
+    '''
+    This function calculates total atmospheric backscattering ratio.
+
+    Parameters:
+        rayleigh_optical_depth (float): Rayleigh optical depth. Inherited from _calc_rayleigh_optical_depth() function.
+
+    Returns:
+        satm (float): total atmospheric backscattering ratio.    
+    '''
     
-    #print('\tCalculating Atmospheric Backscattering Ratio ...')
     satm = 0.92 * rayleigh_optical_depth * (np.exp(-1 * rayleigh_optical_depth))
     return satm
 
@@ -82,10 +149,22 @@ def _calc_total_transmittance(solar_zenith_angle,
                               sensor_zenith_angle,
                               rayleigh_optical_depth):
     
+    '''
+    This function calculates total transmittance. 
+    Total transmittance is the product of transmittance on the surface-sensor path and transmittance on the surface-solar path.
+
+    Parameters:
+        solar_zenith_angle (float): solar zenith angle in radians.
+        sensor_zenith_angle (float): sensor zenith angle in radians.
+        rayleigh_optical_depth (float): Rayleigh optical depth. Inherited from _calc_rayleigh_optical_depth() function.
+
+    Returns:
+        total_transmittance (float): total transmittance.
+    '''
+    
     us = np.cos(solar_zenith_angle)
     uv = np.cos(sensor_zenith_angle)
     
-    #print('\tCalculating Transmission on sun-surface path ...')
     ts = np.exp(-1 * rayleigh_optical_depth / us) + np.exp(-1 * rayleigh_optical_depth / us) * (np.exp(0.52 * rayleigh_optical_depth / us) - 1)
     
     #print('\tCalculating Transmission on surface-sensor path ...')
@@ -95,6 +174,20 @@ def _calc_total_transmittance(solar_zenith_angle,
     return total_transmittance
 
 def export_tif(opf, variable, var_name, band, param):
+
+    '''
+    This function exports the calculated variable to a GeoTIFF file.
+
+    Parameters:
+        opf (str): output folder path.
+        variable (float): calculated variable.
+        var_name (str): variable name.
+        band (int): band number.
+        param (dict): rasterio parameters.
+
+    Returns:
+        None.
+    '''
     
     with rasterio.open(os.path.join(opf, f'{var_name}_{band}.TIF'), 'w', **param) as r:
         r.write(variable, 1)
@@ -104,6 +197,23 @@ def calc_quant(wavelength,
                solar_zenith_angle_deg,
                sensor_azimuth_angle_deg,
                sensor_zenith_angle_deg):
+    
+    '''
+    This function calculates the Rayleigh optical depth, Rayleigh reflectance, and total atmospheric backscattering ratio for a given wavelength. 
+
+    Parameters:
+        wavelength (float): wavelength in micrometers.
+        solar_azimuth_angle_deg (float): solar azimuth angle in degrees.
+        solar_zenith_angle_deg (float): solar zenith angle in degrees.
+        sensor_azimuth_angle_deg (float): sensor azimuth angle in degrees.
+        sensor_zenith_angle_deg (float): sensor zenith angle in degrees.
+
+    Returns:
+        tau (float): Rayleigh optical depth.
+        ray_ref (float): Rayleigh reflectance.
+        satm (float): total atmospheric backscattering ratio.
+        total_trans (float): total transmittance.
+    '''
     
     solar_azimuth_angle = np.deg2rad(solar_azimuth_angle_deg)
     solar_zenith_angle = np.deg2rad(solar_zenith_angle_deg)
@@ -128,6 +238,18 @@ def calc_quant(wavelength,
     return (tau, ray_ref, satm, total_trans)
 
 def check_exist(inpf, band, sensor):
+
+    '''
+    This function checks if the input files exist.
+
+    Parameters:
+        inpf (str): input folder path.
+        band (int): band number.
+        sensor (str): sensor name. 
+
+    Returns:
+        response (bool): True if all the input files exist, False otherwise.
+    '''
     
     response = False
     
@@ -166,6 +288,23 @@ def check_exist(inpf, band, sensor):
     return response
 
 def read_files(inpf, sensor, band):
+
+    '''
+    This function reads the input files. 
+
+    Parameters:
+        inpf (str): input folder path.
+        sensor (str): sensor name.
+        band (int): band number.
+
+    Returns:
+        saa (numpy.ndarray): solar azimuth angle.
+        sza (numpy.ndarray): solar zenith angle.
+        vaa (numpy.ndarray): sensor azimuth angle.
+        vza (numpy.ndarray): sensor zenith angle.
+        param (dict): rasterio parameters.
+        shape (tuple): array shape.    
+    '''
     
     if sensor == 'L8':
     
@@ -223,6 +362,26 @@ def read_files(inpf, sensor, band):
     return (saa, sza, vaa, vza, param, shape)
    
 def rsr_calc(inpf, band, rsr_list, central_wavelength, export, sensor):
+
+    '''
+    This is the main function. It calculates the Rayleigh reflectance, transmittance, optical depth and atmospheric backscattering ratio at central wavelength as well 
+    considering the relative spectral response (RSR) of the sensor. It also writes the outputs to a text file. 
+
+    Parameters:
+
+        inpf (str): input folder path.
+        band (int): band number.
+        rsr_list (list): a dataframe containing the relative spectral response (RSR) of the sensor.
+        central_wavelength (int): central wavelength of the band.
+        export (bool): if True, the outputs will be exported as GeoTIFF files.
+        sensor (str): sensor name.
+
+    Returns:
+        rsr_rayleigh (numpy.ndarray): Rayleigh reflectance considering the RSR of the sensor.
+        rsr_satm (numpy.ndarray): atmospheric backscattering ratio considering the RSR of the sensor.
+        rsr_total_trans (numpy.ndarray): total transmittance considering the RSR of the sensor.
+    
+    '''
     
     opf = os.path.join(inpf, 'Output')
     os.makedirs(opf, exist_ok = True)
@@ -303,6 +462,17 @@ def rsr_calc(inpf, band, rsr_list, central_wavelength, export, sensor):
     return (rsr_rayleigh, rsr_satm, rsr_total_trans)
 
 def do_rsr(export):
+
+    '''
+    This is the caller function for the RSR calculation function. It takes the sensor name, band choice, and folder path containing the 
+    radiance and metadata (if any) file as input. It takes the input as prompts. 
+
+    Parameters: 
+        export (bool): If True, the RSR reflectance and transmittance will be exported as GeoTIFF files. Default is False.
+
+    Returns:
+        None
+    '''
     
     if export is None:
         export = False
@@ -400,5 +570,6 @@ def do_rsr(export):
         do_rsr()
         
     return None
-        
-do_rsr(input('Export outputs as TIF files [may take a lot of space. Default is False]: '))      
+
+# Example ------
+do_rsr(input('Export outputs as TIF files [may take a lot of space. Default is False]: '))
