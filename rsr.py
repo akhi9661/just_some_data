@@ -368,7 +368,6 @@ def rsr_calc(inpf, band, rsr_list, central_wavelength, export, sensor):
     considering the relative spectral response (RSR) of the sensor. It also writes the outputs to a text file. 
 
     Parameters:
-
         inpf (str): input folder path.
         band (int): band number.
         rsr_list (list): a dataframe containing the relative spectral response (RSR) of the sensor.
